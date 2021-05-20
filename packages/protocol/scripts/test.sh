@@ -84,12 +84,12 @@ setup_gsn_relay() {
 }
 
 
-if ganache_running; then
-  echo "Using existing ganache instance"
-else
-  echo "Starting our own ganache instance"
-  start_ganache
-fi
+# if ganache_running; then
+#   echo "Using existing ganache instance"
+# else
+#   echo "Starting our own ganache instance"
+#   start_ganache
+# fi
 
 # if relayer_running; then
 #   echo "Using existing relayer instance"
@@ -106,7 +106,7 @@ if [ "$SOLC_NIGHTLY" = true ]; then
 fi
 
 ./node_modules/.bin/truffle version
-./node_modules/.bin/truffle test "$@"
+./node_modules/.bin/truffle test "$@" --network baobabLocal
 
 if [ "$MODE" = "coverage" ]; then
   ./node_modules/.bin/istanbul report html lcov

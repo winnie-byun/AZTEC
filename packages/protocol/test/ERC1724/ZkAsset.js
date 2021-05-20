@@ -100,12 +100,14 @@ contract('ZkAsset', (accounts) => {
         });
 
         it('should update a note registry with output notes', async () => {
+            // input  : [], output : [10]
+            // ERC20.sol -> ZKAsset.sol (ZKAsset에서는 누가 얼마나 들고 있는지 counting 중)
             const zkAsset = await ZkAsset.new(ace.address, erc20.address, scalingFactor);
             const {
-                depositInputNotes,
-                depositOutputNotes,
-                depositPublicValue,
-                depositInputOwnerAccounts,
+                depositInputNotes,          // []
+                depositOutputNotes,         // note.create(userA.publicKey, [10])
+                depositPublicValue,         // 10
+                depositInputOwnerAccounts,  // [];
             } = await helpers.getDefaultDepositNotes();
             const publicValue = depositPublicValue * -1;
 
@@ -117,25 +119,33 @@ contract('ZkAsset', (accounts) => {
             const transferAmountBN = new BN(depositPublicValue);
             const expectedBalancePostTransfer = balancePreTransfer.sub(transferAmountBN.mul(scalingFactor));
 
+            // public token을 external address로 보낼 때, publicApprove 호출 필요
+            // confidentialTransfer에서 public owner가 approve 했는지 확인함
+            // * 내 ERC20 -> zkAsset으로 옮기는데, approve 필요
+            // * zkAsset을 ERC20으로 옮기는데, approve 필요 X
             await ace.publicApprove(zkAsset.address, proof.hash, depositPublicValue, { from: accounts[0] });
+            // zkAsset의 token을 erc20으로 전송
             const { receipt } = await zkAsset.methods['confidentialTransfer(bytes,bytes)'](data, signatures, {
                 from: accounts[0],
             });
             expect(receipt.status).to.equal(true);
 
-            const balancePostTransfer = await erc20.balanceOf(accounts[0]);
+            const balancePostTransfer = await erc20.balanceOf(accounts[0]); // ERC20에서 잘 빠져 나갔는지 확인
             expect(balancePostTransfer.toString()).to.equal(expectedBalancePostTransfer.toString());
         });
 
         it('should emit CreateNote() event with customMetaData when a single note is created', async () => {
+            // 위 테스트와 동일한 경우, 메타데이터 확인 로직이 추가 됨
+            // input  : [], output : [10]
+            // ERC20.sol -> ZKAsset.sol (ZKAsset에서는 누가 얼마나 들고 있는지 counting 중)
             const zkAsset = await ZkAsset.new(ace.address, erc20.address, scalingFactor);
             const {
-                depositInputNotes,
-                depositOutputNotes,
-                depositPublicValue,
-                depositInputOwnerAccounts,
+                depositInputNotes,          // []
+                depositOutputNotes,         // note.create(userA.publicKey, [10])
+                depositPublicValue,         // 10
+                depositInputOwnerAccounts,  // [];
             } = await helpers.getDefaultDepositNotes();
-            const publicValue = depositPublicValue * -1;
+            const publicValue = depositPublicValue * -1; // -10
             const ephemeral = depositOutputNotes[0].metaData.slice(2);
 
             depositOutputNotes.forEach((individualNote) => {
@@ -150,11 +160,16 @@ contract('ZkAsset', (accounts) => {
             const transferAmountBN = new BN(depositPublicValue);
             const expectedBalancePostTransfer = balancePreTransfer.sub(transferAmountBN.mul(scalingFactor));
 
+            // public token을 external address로 보낼 때, publicApprove 호출 필요
+            // confidentialTransfer에서 public owner가 approve 했는지 확인함
+            // * 내 ERC20 -> zkAsset으로 옮기는데, approve 필요
+            // * zkAsset을 ERC20으로 옮기는데, approve 필요 X
             await ace.publicApprove(zkAsset.address, proof.hash, 200, { from: accounts[0] });
+            // zkAsset의 token을 erc20으로 전송
             const { receipt } = await zkAsset.methods['confidentialTransfer(bytes,bytes)'](data, signatures, {
                 from: accounts[0],
             });
-            const balancePostTransfer = await erc20.balanceOf(accounts[0]);
+            const balancePostTransfer = await erc20.balanceOf(accounts[0]); // ERC20에서 잘 빠져 나갔는지 확인
             expect(balancePostTransfer.toString()).to.equal(expectedBalancePostTransfer.toString());
 
             // Crucial check, confirm that the event contains the expected metaData
@@ -255,16 +270,17 @@ contract('ZkAsset', (accounts) => {
         });
 
         it('should update a note registry by consuming input notes, with kPublic negative', async () => {
+            // ERC20 -> ZkAsset userA -> zkAsset userB
             const zkAsset = await ZkAsset.new(ace.address, erc20.address, scalingFactor);
             const {
-                depositInputNotes,
-                depositOutputNotes,
-                depositInputOwnerAccounts,
-                transferInputNotes,
-                transferOutputNotes,
-                transferInputOwnerAccounts,
-                depositPublicValue,
-                withdrawalPublicValue,
+                depositInputNotes,          // []
+                depositOutputNotes,         // (userA, [50,10])
+                depositInputOwnerAccounts,  // [];
+                transferInputNotes,         // (userA, [50,10])
+                transferOutputNotes,        // (userB, [50, 10])
+                transferInputOwnerAccounts, // userA
+                depositPublicValue,         // -60
+                withdrawalPublicValue,      // 10
             } = await helpers.getDefaultDepositAndTransferNotes();
 
             const depositProof = new JoinSplitProof(

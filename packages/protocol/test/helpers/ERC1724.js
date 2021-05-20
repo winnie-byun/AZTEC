@@ -3,6 +3,13 @@ const secp256k1 = require('@aztec/secp256k1');
 
 const userA = secp256k1.generateAccount();
 const userB = secp256k1.generateAccount();
+// const userC = secp256k1.accountFromPrivateKey("bf92b306929da50790b75f3a11d5c73891975e082cdd6b23293cbb0907a047ff");
+// const userD = secp256k1.accountFromPrivateKey("5a00c1fb3dfdd769a2940b4bb2c0e38e0090aa0c287d6f3251fae15238488c28");
+
+console.log("userA:", userA);
+console.log("userB:", userB);
+// console.log("userC:", userC);
+// console.log("userD:", userD);
 
 const customMetaData = {
     data:
